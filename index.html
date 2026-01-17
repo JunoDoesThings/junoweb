@@ -43,15 +43,15 @@
       padding: 24px;
       border-bottom: 1px solid #e5e5e5;
       margin: 0;
+      position: relative;
     }
 
     nav {
-      max-width: var(--max-width);
-      margin: 0 auto;
       display: flex;
       gap: 20px;
       font-size: 14px;
       justify-content: center;
+      align-items: center;
       flex-wrap: nowrap;
       white-space: nowrap;
     }
@@ -187,6 +187,7 @@
       <a href="music.html">Music</a>
       <a href="art.html">Art</a>
       <a href="self-archive.html">Self-Archive</a>
+      <a href="#" onclick="window.open('https://www.patreon.com/cw/JunoDoesThings'); return false;" class="patreon">Patreon</a>
 
     </nav>
   </header>
@@ -235,7 +236,7 @@
     if(!a) return;
     var href = a.getAttribute('href');
     if(!href) return;
-    if(href.indexOf('#') === 0 || a.target === '_blank' || href.startsWith('javascript:')) return;
+    if(href.indexOf('#') === 0 || href.startsWith('http') || a.getAttribute('target') === '_blank' || href.startsWith('javascript:')) return;
     e.preventDefault();
     overlay.style.opacity = '1';
     setTimeout(function(){ window.location = href; }, 260);
