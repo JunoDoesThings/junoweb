@@ -67,6 +67,9 @@
     textarea::placeholder {
       color: rgba(255,255,255,0.6);
     }
+    input[type="file"] {
+      color: #fff;
+    }
     textarea {
       min-height: 120px;
       resize: vertical;
@@ -116,6 +119,10 @@
       color: rgba(255,255,255,0.8);
       display: block;
       margin-bottom: 8px;
+    }
+    .pinned-tag {
+      opacity: 0.6;
+      font-size: 0.65em;
     }
     .remove-btn {
       background: rgba(255,100,100,0.6);
@@ -180,6 +187,15 @@
     </div>
     
     <div class="form-group">
+      <label for="post-image">Post Image (Optional)</label>
+      <input type="file" id="post-image" accept="image/*">
+      <div id="image-preview" style="margin-top: 10px; display: none;">
+        <img id="preview-img" style="max-width: 200px; max-height: 200px; border-radius: 4px; margin-right: 10px;">
+        <button type="button" onclick="removeImage()" style="background: rgba(220, 53, 69, 0.8);">Remove Image</button>
+      </div>
+    </div>
+    
+    <div class="form-group">
       <label for="post-date">Date (leave blank for today)</label>
       <input type="text" id="post-date" placeholder="e.g., January 10, 2026">
     </div>
@@ -203,7 +219,29 @@
 
     window.addEventListener('DOMContentLoaded', function() {
       loadBlogPosts();
+      
+      // Image preview handler
+      document.getElementById('post-image').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            const preview = document.getElementById('image-preview');
+            const previewImg = document.getElementById('preview-img');
+            previewImg.src = event.target.result;
+            preview.style.display = 'block';
+          };
+          reader.readAsDataURL(file);
+        } else {
+          document.getElementById('image-preview').style.display = 'none';
+        }
+      });
     });
+
+    function removeImage() {
+      document.getElementById('post-image').value = '';
+      document.getElementById('image-preview').style.display = 'none';
+    }
 
     function loadBlogPosts() {
       fetch('blog.html')
@@ -221,27 +259,36 @@
             
             h2s.forEach((h2, index) => {
               const title = h2.textContent.trim();
+              const isPinned = title.includes('[PINNED]');
+              const cleanTitle = title.replace(/\s*\[PINNED\].*$/, '');
               const dateDiv = dates[index];
               const dateText = dateDiv ? dateDiv.textContent.replace('Posted on ', '').trim() : 'Unknown date';
               
               let content = [];
+              let imageData = null;
               let sibling = h2.nextElementSibling;
               while (sibling && !sibling.classList.contains('blog-date')) {
                 sibling = sibling.nextElementSibling;
               }
               if (sibling) {
                 sibling = sibling.nextElementSibling;
-                while (sibling && sibling.tagName === 'P') {
-                  content.push(sibling.textContent.trim());
+                while (sibling && (sibling.tagName === 'P' || sibling.tagName === 'IMG')) {
+                  if (sibling.tagName === 'P') {
+                    content.push(sibling.textContent.trim());
+                  } else if (sibling.tagName === 'IMG') {
+                    imageData = sibling.src;
+                  }
                   sibling = sibling.nextElementSibling;
                 }
               }
               
-              if (title) {
+              if (cleanTitle) {
                 blogPosts.push({
-                  title: title,
+                  title: cleanTitle,
                   content: content.join('\n'),
-                  date: dateText
+                  date: dateText,
+                  image: imageData,
+                  pinned: isPinned
                 });
               }
             });
@@ -261,6 +308,8 @@
       const title = document.getElementById('post-title').value.trim();
       const content = document.getElementById('post-content').value.trim();
       let dateStr = document.getElementById('post-date').value.trim();
+      const imageFile = document.getElementById('post-image').files[0];
+      let imageData = null;
       
       if (!title || !content) {
         alert('Please fill in both title and content!');
@@ -271,15 +320,33 @@
         dateStr = formatDate(new Date());
       }
       
+      // Convert image to base64 if provided
+      if (imageFile) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          imageData = e.target.result;
+          addPostToList(title, content, dateStr, imageData);
+        };
+        reader.readAsDataURL(imageFile);
+      } else {
+        addPostToList(title, content, dateStr, null);
+      }
+    }
+
+    function addPostToList(title, content, dateStr, imageData) {
       blogPosts.unshift({
         title: title,
         content: content,
-        date: dateStr
+        date: dateStr,
+        image: imageData,
+        pinned: false
       });
       
       document.getElementById('post-title').value = '';
       document.getElementById('post-content').value = '';
       document.getElementById('post-date').value = '';
+      document.getElementById('post-image').value = '';
+      document.getElementById('image-preview').style.display = 'none';
       
       updatePreview();
     }
@@ -289,11 +356,19 @@
       
       let html = '';
       blogPosts.forEach((post, idx) => {
+        const pinnedLabel = post.pinned ? '<span style="color: #FFD700; font-weight: bold; margin-left: 8px;">[PINNED]</span>' : '';
+        const pinBtnText = post.pinned ? 'Unpin' : 'Pin';
+        const pinBtnStyle = post.pinned ? 'background: rgba(255, 215, 0, 0.6);' : '';
+        const moveUpBtn = idx > 0 ? `<button class="edit-btn" onclick="movePost(${idx}, -1)" style="font-size: 11px;">↑ Up</button>` : '<button class="edit-btn" style="font-size: 11px; opacity: 0.3;" disabled>↑ Up</button>';
+        const moveDownBtn = idx < blogPosts.length - 1 ? `<button class="edit-btn" onclick="movePost(${idx}, 1)" style="font-size: 11px;">↓ Down</button>` : '<button class="edit-btn" style="font-size: 11px; opacity: 0.3;" disabled>↓ Down</button>';
         html += `<div class="preview-item">
-          <strong>${escapeHtml(post.title)}</strong>
+          <strong>${escapeHtml(post.title)}${pinnedLabel}</strong>
           <span class="preview-date">Posted on ${escapeHtml(post.date)}</span>
           <span class="preview-content">${escapeHtml(post.content.split('\n')[0])}</span>
           <button class="edit-btn" onclick="editPost(${idx})">Edit</button>
+          <button class="edit-btn" onclick="togglePin(${idx})" style="${pinBtnStyle}">${pinBtnText}</button>
+          ${moveUpBtn}
+          ${moveDownBtn}
           <button class="remove-btn" onclick="removePost(${idx})">Remove</button>
         </div>`;
       });
@@ -304,6 +379,23 @@
 
     function removePost(index) {
       blogPosts.splice(index, 1);
+      updatePreview();
+    }
+
+    function togglePin(index) {
+      blogPosts[index].pinned = !blogPosts[index].pinned;
+      updatePreview();
+    }
+
+    function movePost(index, direction) {
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= blogPosts.length) return;
+      
+      // Swap posts
+      const temp = blogPosts[index];
+      blogPosts[index] = blogPosts[newIndex];
+      blogPosts[newIndex] = temp;
+      
       updatePreview();
     }
 
@@ -332,16 +424,28 @@
         return;
       }
       
+      // Sort posts: pinned first, then by order
+      const sortedPosts = [...blogPosts].sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return 0;
+      });
+      
       let postsHtml = '';
-      blogPosts.forEach(post => {
-        postsHtml += `    <div class="blog-post">\n`;
-        postsHtml += `      <h2>${escapeHtml(post.title)}</h2>\n`;
+      sortedPosts.forEach(post => {
+        const pinnedClass = post.pinned ? ' style="max-width: 75%; margin-left: auto; margin-right: auto;"' : '';
+        postsHtml += `    <div class="blog-post"${pinnedClass}>\n`;
+        postsHtml += `      <h2>${escapeHtml(post.title)}${post.pinned ? ' <span class="pinned-tag">[PINNED]</span>' : ''}</h2>\n`;
         postsHtml += `      <div class="blog-date">Posted on ${escapeHtml(post.date)}</div>\n`;
         
         const paragraphs = post.content.split('\n').filter(p => p.trim());
         paragraphs.forEach(para => {
           postsHtml += `      <p>${escapeHtml(para)}</p>\n`;
         });
+        
+        if (post.image) {
+          postsHtml += `      <img src="${post.image}" style="width: 100%; max-width: 300px; border-radius: 4px; margin: 12px 0;">\n`;
+        }
         
         postsHtml += `    </div>\n`;
       });
@@ -392,6 +496,7 @@
     .blog-post { background: rgba(0,0,0,0.5); padding: 18px; border-radius: 8px; color: #fff; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; margin-bottom: 20px; text-align: left; }
     .blog-post h2 { font-size: 20px; margin-top: 0; margin-bottom: 12px; color: #fff; }
     .blog-date { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 8px; }
+    .pinned-tag { opacity: 0.6; }
     footer { max-width: var(--max-width); margin: 64px auto 32px; padding: 0 24px; font-size: 13px; color: var(--muted); }
     main { opacity: 1; transform: none; transition: opacity 380ms ease-out, transform 380ms ease-out; }
     body.loaded main { opacity: 1; transform: none; }

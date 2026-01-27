@@ -8,7 +8,7 @@ BLOG_FILE = 'blog.html'
 
 @app.route('/')
 def serve_index():
-    return send_from_directory('.', 'blog-admin.html')
+    return send_from_directory('.', 'b7x2kR9mL.html')
 
 @app.route('/<path:filename>')
 def serve_files(filename):
