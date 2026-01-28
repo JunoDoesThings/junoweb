@@ -54,6 +54,20 @@
     .shatter-clone { position: absolute; pointer-events: none; left: 0; top: 0; transform-origin: center; transition: transform 900ms cubic-bezier(.1,.7,.1,1), opacity 900ms linear; will-change: transform, opacity; white-space: pre; }
     .shatter-hidden { visibility: hidden; }
     html.preload #page-blink { opacity: 1; }
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      header { padding: 16px; }
+      nav { gap: 12px; font-size: 13px; flex-wrap: wrap; white-space: normal; }
+      main { margin: 32px auto; padding: 0 16px; }
+      h1 { font-size: 22px; }
+    }
+    @media (max-width: 480px) {
+      nav { gap: 8px; font-size: 12px; }
+      nav a { padding: 4px 6px; }
+      main { margin: 24px auto; padding: 0 12px; }
+      h1 { font-size: 20px; }
+      footer { font-size: 11px; }
+    }
   </style>
 </head>
 <body>
