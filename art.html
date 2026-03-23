@@ -300,9 +300,14 @@
   </header>
 
   <main>
-    <h1>Art</h1>
+    <h1><span id="art-text">Art</span></h1>
 
     <div class="art-gallery">
+      <div class="art-item">
+        <img src="Art/doodling is fun.png" alt="doodling is fun" data-description="doodling is fun">
+        <p class="muted">doodling is fun</p>
+      </div>
+
       <div class="art-item">
         <img src="Art/i fear i have changed for the worse.png" alt="i fear i have changed for the worse" data-description="how i feel mentally, i have changed in everyway old me would of hated. i am now a self loathing loser who struggles with mental health on a daily.">
         <p class="muted">i fear i have changed for the worse</p>
@@ -477,6 +482,40 @@
         document.body.style.overflow = 'auto';
       }
     });
+
+    // Art heading click handler to play video
+    const artText = document.getElementById('art-text');
+    if(artText) {
+      artText.style.cursor = 'pointer';
+      artText.addEventListener('click', function() {
+      const video = document.createElement('video');
+      video.src = 'Art/sunshine.mov';
+      video.controls = true;
+      video.autoplay = true;
+      video.style.position = 'fixed';
+      video.style.top = '50%';
+      video.style.left = '50%';
+      video.style.transform = 'translate(-50%, -50%)';
+      video.style.zIndex = '10000';
+      video.style.maxWidth = '90vw';
+      video.style.maxHeight = '90vh';
+      
+      const overlay = document.createElement('div');
+      overlay.style.position = 'fixed';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      overlay.style.zIndex = '9999';
+      overlay.addEventListener('click', function() {
+        document.body.removeChild(overlay);
+        document.body.removeChild(video);
+      });
+      document.body.appendChild(overlay);
+      document.body.appendChild(video);
+      });
+    }
   </script>
 
   <div id="page-blink"></div>
