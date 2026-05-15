@@ -158,11 +158,12 @@
   </style>
 </head>
 <body>
-  <header>
+    <header>
     <nav>
       <a href="index.html">Home</a>
       <a href="about.html">About Me</a>
       <a href="blog.html">Blog</a>
+      <a href="energy-diagnosis.html">Energy Diagnosis</a>
       <a href="chords.html">Chords</a>
       <a href="cheapwine.html">Cheapwine Hangover</a>
       <a href="socials.html">Socials</a>
@@ -176,8 +177,16 @@
   </header>
   
   <main>
-    <h1>Blog Post Creator</h1>
-    
+    <h1 id="main-heading">Blog Post Creator</h1>
+
+    <div class="form-group">
+      <label for="post-target">Edit target</label>
+      <select id="post-target">
+        <option value="blog">Blog</option>
+        <option value="diagnosis">Energy Diagnosis</option>
+      </select>
+    </div>
+
     <div class="form-group">
       <label for="post-title">Post Title</label>
       <input type="text" id="post-title" placeholder="Enter your blog post title">
@@ -202,12 +211,12 @@
       <input type="text" id="post-date" placeholder="e.g., January 10, 2026">
     </div>
     
-    <button onclick="generatePost()">Add Post to Blog</button>
+    <button id="add-post-button" onclick="generatePost()">Add Post</button>
     
     <div id="preview-section" class="output-section">
-      <h2 style="text-align: left; margin-top: 0;">Blog Preview</h2>
+      <h2 style="text-align: left; margin-top: 0;">Preview</h2>
       <div id="blog-preview" style="background: rgba(0,0,0,0.7); padding: 12px; border-radius: 4px; text-align: left; max-height: 400px; overflow-y: auto;"></div>
-      <button class="copy-btn" onclick="saveBlogNow()" style="background: rgba(76, 175, 80, 0.8);">Save to blog.html</button>
+      <button id="save-button" class="copy-btn" onclick="saveBlogNow()" style="background: rgba(76, 175, 80, 0.8);">Save</button>
       <div id="save-status" style="margin-top: 12px; font-size: 12px; color: rgba(255,255,255,0.7); display: none;"></div>
     </div>
   </main>
@@ -217,9 +226,35 @@
   </footer>
 
   <script>
+    const PAGE_CONFIGS = {
+      blog: {
+        file: 'blog.html',
+        pageTitle: 'Blog — thisisjunoswebsite',
+        adminHeading: 'Blog Post Creator',
+        publicHeading: 'Blog',
+        saveLabel: 'Save to blog.html',
+        addLabel: 'Add Post to Blog'
+      },
+      diagnosis: {
+        file: 'energy-diagnosis.html',
+        pageTitle: 'The Energy Diagnosis — thisisjunoswebsite',
+        adminHeading: 'Energy Diagnosis Editor',
+        publicHeading: 'The Energy Diagnosis',
+        saveLabel: 'Save to energy-diagnosis.html',
+        addLabel: 'Add Post to Energy Diagnosis'
+      }
+    };
     let blogPosts = [];
+    let currentTarget = 'blog';
 
     window.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('post-target').addEventListener('change', function() {
+        currentTarget = this.value;
+        updateTargetLabels();
+        loadBlogPosts();
+      });
+
+      updateTargetLabels();
       loadBlogPosts();
       
       // Image preview handler
@@ -246,7 +281,8 @@
     }
 
     function loadBlogPosts() {
-      fetch('blog.html')
+      const targetFile = PAGE_CONFIGS[currentTarget].file;
+      fetch(targetFile)
         .then(response => response.text())
         .then(html => {
           const parser = new DOMParser();
@@ -298,7 +334,18 @@
           
           updatePreview();
         })
-        .catch(err => console.log('Could not load blog.html'));
+        .catch(err => {
+          blogPosts = [];
+          updatePreview();
+          console.log('Could not load', PAGE_CONFIGS[currentTarget].file, err);
+        });
+    }
+
+    function updateTargetLabels() {
+      const config = PAGE_CONFIGS[currentTarget];
+      document.getElementById('main-heading').textContent = config.adminHeading;
+      document.getElementById('save-button').textContent = config.saveLabel;
+      document.getElementById('add-post-button').textContent = config.addLabel;
     }
 
     function formatDate(date) {
@@ -432,6 +479,7 @@
         if (!a.pinned && b.pinned) return 1;
         return 0;
       });
+      const config = PAGE_CONFIGS[currentTarget];
       
       let postsHtml = '';
       sortedPosts.forEach(post => {
@@ -456,7 +504,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Blog — thisisjunoswebsite</title>
+  <title>${config.pageTitle}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     @font-face {
@@ -512,6 +560,7 @@
       <a href="index.html">Home</a>
       <a href="about.html">About Me</a>
       <a href="blog.html">Blog</a>
+      <a href="energy-diagnosis.html">Energy Diagnosis</a>
       <a href="chords.html">Chords</a>
       <a href="cheapwine.html">Cheapwine Hangover</a>
       <a href="socials.html">Socials</a>
@@ -522,7 +571,7 @@
     </nav>
   </header>
   <main>
-    <h1>Blog</h1>
+    <h1>${config.publicHeading}</h1>
 ${postsHtml}  </main>
   <footer>
     <p class="muted">thanks for reading!</p>
@@ -542,12 +591,12 @@ ${postsHtml}  </main>
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ html: fullHtml })
+        body: JSON.stringify({ html: fullHtml, target: currentTarget })
       })
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          statusDiv.textContent = '✓ Blog saved successfully!';
+          statusDiv.textContent = '✓ Saved successfully!';
           statusDiv.style.color = 'rgba(76, 175, 80, 1)';
           setTimeout(() => {
             statusDiv.style.display = 'none';
